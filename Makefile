@@ -10,7 +10,7 @@ PKG_LICENSE_FILES:=LICENSE            # 许可证文件路径
 
 # 从Git仓库获取
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/snltty/linker.git  # 源码仓库地址
+PKG_SOURCE_URL:=https://github.com/xkvry/linker.git  # 源码仓库地址
 PKG_SOURCE_VERSION:=master  # 特定commit哈希或分支名（如master）
 PKG_MIRROR_HASH:=skip                    # 可选，源码校验值（自动生成：make package/helloworld/update）
 
@@ -31,7 +31,7 @@ define Package/$(PKG_NAME)
   CATEGORY:=network                   # 二级分类（menuconfig中显示的菜单名）
   SUBMENU:=My Custom Packages           # 三级子菜单（可选）
   TITLE:=linker            # 包显示名称
-  URL:=https://github.com/snltty/linker  # 项目主页
+  URL:=https://github.com/xkvry/linker  # 项目主页
   DEPENDS:=+zlib +bash +iptables +kmod-tun +ip-full +kmod-ipt-nat +libstdcpp +libopenssl +libopenssl-legacy             # 运行时依赖（目标系统必须安装的包）
 endef
 
