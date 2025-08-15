@@ -1,118 +1,92 @@
-# 基础包信息（必选）
-PKG_NAME:=linker                  # 包名称，必须与目录名一致
-PKG_VERSION:=1.9.0                    # 源码版本号
-PKG_RELEASE:=1                        # 包发布号，每次修改包时递增
-PKG_LICENSE:=GPL-2.0                  # 许可证类型
-PKG_LICENSE_FILES:=LICENSE            # 许可证文件路径
-#PKG_MAINTAINER:=Your Name <your@email.com>  # 维护者信息
+include $(TOPDIR)/rules.mk
 
-# 从Git仓库获取
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/xkvry/linker.git  # 源码仓库地址
-PKG_SOURCE_VERSION:=master  # 特定commit哈希或分支名（如master）
-PKG_MIRROR_HASH:=skip                    # 可选，源码校验值（自动生成：make package/helloworld/update）
+PKG_NAME:=linker
+PKG_VERSION:=1.9.0
+PKG_RELEASE:=1
 
-# 依赖设置（可选）
-PKG_BUILD_DEPENDS:=+libuci +libubus +autoconf +automake +libtool +pkg-config +gcc +g++ +make +python +perl +libopenssl     # 编译时依赖（仅编译阶段需要）
-# PKG_BUILD_PARALLEL:=1                 # 允许并行编译（适合多文件项目）
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://github.com/xkvry/linker/archive/refs/tags/v$(PKG_VERSION).tar.gz
+PKG_HASH:=skip  # 建议从下载页面获取实际的SHA256哈希值
 
-# 目标架构设置（可选）
-# PKG_ARCH:=all                         # 所有架构通用
-# PKG_ARCH:=x86_64 arm aarch64          # 指定支持的架构
+PKG_MAINTAINER:=xkvry <your-email@example.com>
+PKG_LICENSE:=GPL-2.0
+PKG_LICENSE_FILES:=LICENSE
 
-# 引入OpenWRT基础包定义（必选）
+# 依赖.NET 8运行时
+PKG_BUILD_DEPENDS:=dotnet-sdk-8.0/host
+
 include $(INCLUDE_DIR)/package.mk
 
-# 定义包元数据（必选）
-define Package/$(PKG_NAME)
-  SECTION:=net                        # 一级分类（net/utils/libs/system等）
-  CATEGORY:=network                   # 二级分类（menuconfig中显示的菜单名）
-  SUBMENU:=My Custom Packages           # 三级子菜单（可选）
-  TITLE:=linker            # 包显示名称
-  URL:=https://github.com/xkvry/linker  # 项目主页
-  DEPENDS:=+zlib +bash +iptables +kmod-tun +ip-full +kmod-ipt-nat +libstdcpp +libopenssl +libopenssl-legacy             # 运行时依赖（目标系统必须安装的包）
+define Package/linker
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=Linker - 异地设备组网工具
+  URL:=https://github.com/xkvry/linker
+  DEPENDS:=+libstdcpp +libpthread +dotnet-runtime-8.0
+  # 支持的架构
+  SUPPORTED_ARCHES:=x86_64 arm aarch64 mips mipsel
 endef
 
-# 包详细描述（可选）
-define Package/$(PKG_NAME)/description
-  linker
+define Package/linker/description
+  基于.NET 8开发的网络工具，实现异地设备像在同一局域网内一样便捷访问。
+  支持P2P打洞、中继连接、虚拟网卡组网等功能。
 endef
 
-# 编译前配置（可选，根据构建系统选择）
-# define Build/Configure
-  # Autotools项目示例
-#   (cd $(PKG_BUILD_DIR); \
-#     ./autogen.sh; \
-#     ./configure \
-#       --prefix=/usr \
-#       --host=$(GNU_HOST_NAME) \
-#       --build=$(GNU_BUILD_NAME) \
-#       --disable-static \
-#       --enable-shared \
-#   );
+define Build/Configure
+  # 无需额外配置
+endef
 
-  # CMake项目示例（注释掉上面的Autotools部分，使用下面的）
-  # mkdir -p $(PKG_BUILD_DIR)/build
-  # (cd $(PKG_BUILD_DIR)/build; \
-  #   cmake .. \
-  #     -DCMAKE_INSTALL_PREFIX=/usr \
-  #     -DCMAKE_C_COMPILER=$(TARGET_CC) \
-  #     -DCMAKE_CXX_COMPILER=$(TARGET_CXX) \
-  #     -DCMAKE_C_FLAGS="$(TARGET_CFLAGS)" \
-  #     -DCMAKE_LDFLAGS="$(TARGET_LDFLAGS)" \
-  # );
-# endef
-
-# 编译命令（必选，根据构建系统修改）
 define Build/Compile
-  # Make项目示例
-  $(MAKE) -C $(PKG_BUILD_DIR) \
-    CC="$(TARGET_CC)" \
-    CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
-    LDFLAGS="$(TARGET_LDFLAGS)" \
-    all
-
-  # CMake项目示例（配合上面的CMake配置）
-  # $(MAKE) -C $(PKG_BUILD_DIR)/build
+  cd $(PKG_BUILD_DIR) && \
+  dotnet publish src/Linker.Server -c Release -o $(PKG_BUILD_DIR)/bin \
+    --framework net8.0 \
+    --runtime $(if $(findstring x86_64,$(ARCH)),linux-x64, \
+              $(if $(findstring arm,$(ARCH)),linux-arm, \
+              $(if $(findstring aarch64,$(ARCH)),linux-arm64, \
+              $(if $(findstring mipsel,$(ARCH)),linux-mipsel, \
+              $(if $(findstring mips,$(ARCH)),linux-mips,linux-x64))))) \
+    --self-contained false \
+    -p:PublishTrimmed=true \
+    -p:TrimMode=link
 endef
 
-# 安装到目标系统（必选）
-define Package/$(PKG_NAME)/install
-  # 创建目标目录
-  $(INSTALL_DIR) $(1)/usr/bin          # 可执行文件目录
-  $(INSTALL_DIR) $(1)/etc/config       # 配置文件目录（可选）
-  $(INSTALL_DIR) $(1)/etc/init.d       # 启动脚本目录（可选）
-
-  # 安装可执行文件
-  $(INSTALL_BIN) $(PKG_BUILD_DIR)/src/linker $(1)/usr/bin/
-
-  # 安装配置文件（可选）
-  $(INSTALL_CONF) ./files/linker.config $(1)/etc/config/linker
-
-  # 安装启动脚本（可选，需设置可执行权限）
+define Package/linker/install
+  # 安装二进制文件
+  $(INSTALL_DIR) $(1)/usr/bin/linker
+  $(CP) $(PKG_BUILD_DIR)/bin/* $(1)/usr/bin/linker/
+  
+  # 安装配置文件
+  $(INSTALL_DIR) $(1)/etc/linker
+  $(CP) $(PKG_BUILD_DIR)/src/Linker.Server/appsettings.json $(1)/etc/linker/
+  
+  # 安装启动脚本
+  $(INSTALL_DIR) $(1)/etc/init.d
   $(INSTALL_BIN) ./files/linker.init $(1)/etc/init.d/linker
+  
+  # 安装防火墙配置
+  $(INSTALL_DIR) $(1)/etc/firewall.d
+  $(INSTALL_DATA) ./files/linker.firewall $(1)/etc/firewall.d/linker
 endef
 
-# 可选：添加启动脚本启用配置（如果有启动脚本）
-define Package/$(PKG_NAME)/postinst
+define Package/linker/postinst
 #!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || {
-  # 启用服务（与/etc/init.d/下的脚本名一致）
+# 检查是否在第一次安装
+if [ -z "$${IPKG_INSTROOT}" ]; then
+  # 启用并启动服务
   /etc/init.d/linker enable
-  exit 0
-}
+  /etc/init.d/linker start
+fi
+exit 0
 endef
 
-# 可选：卸载时清理（如果需要）
-define Package/$(PKG_NAME)/prerm
+define Package/linker/prerm
 #!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || {
-  # 停止服务
-  /etc/init.d/linker disable
+# 检查是否在卸载
+if [ -z "$${IPKG_INSTROOT}" ]; then
   /etc/init.d/linker stop
-  exit 0
-}
+  /etc/init.d/linker disable
+fi
+exit 0
 endef
 
-# 生成包（必选）
-$(eval $(call BuildPackage,$(PKG_NAME)))
+$(eval $(call BuildPackage,linker))
