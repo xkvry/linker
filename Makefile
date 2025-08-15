@@ -8,7 +8,7 @@ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/xkvry/linker/archive/refs/tags/v$(PKG_VERSION).tar.gz
 PKG_HASH:=skip  # 建议从下载页面获取实际的SHA256哈希值
 
-PKG_MAINTAINER:=xkvry <your-email@example.com>
+PKG_MAINTAINER:=xkvry 18803249741@163.com
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 
