@@ -1,5 +1,3 @@
-include $(TOPIR)/rules.mk
-
 # 基础包信息（必选）
 PKG_NAME:=linker                  # 包名称，必须与目录名一致
 PKG_VERSION:=1.9.0                    # 源码版本号
